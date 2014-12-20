@@ -1,6 +1,7 @@
 package com.star.criminalintent;
 
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -8,6 +9,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
@@ -28,6 +30,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
+import java.io.File;
 import java.util.Date;
 import java.util.UUID;
 
@@ -85,6 +88,8 @@ public class CrimeFragment extends Fragment {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
+    @TargetApi(9)
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -150,6 +155,7 @@ public class CrimeFragment extends Fragment {
         });
 
         PackageManager pm = getActivity().getPackageManager();
+
         boolean hasACamera = pm.hasSystemFeature(PackageManager.FEATURE_CAMERA) ||
                 pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT) ||
                 Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD ||
@@ -170,7 +176,9 @@ public class CrimeFragment extends Fragment {
                 }
 
                 FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
-                String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
+//                String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
+
+                String path = getSDPhotoPath();;
 
                 ImageFragment.newInstance(path).show(fragmentManager, DIALOG_IMAGE);
             }
@@ -239,11 +247,15 @@ public class CrimeFragment extends Fragment {
     }
 
     private void showPhoto() {
+
         Photo photo = mCrime.getPhoto();
         BitmapDrawable bitmapDrawable = null;
 
         if (photo != null) {
-            String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
+//            String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
+
+            String path = getSDPhotoPath();
+
             bitmapDrawable = PictureUtils.getScaledDrawable(getActivity(), path);
         }
 
@@ -261,4 +273,19 @@ public class CrimeFragment extends Fragment {
         super.onStop();
         PictureUtils.cleanImageView(mPhotoView);
     }
+
+    private String getSDPhotoPath() {
+
+        Photo photo = mCrime.getPhoto();
+
+        File sdCard = Environment.getExternalStorageDirectory();
+
+        File dir = new File(sdCard.getAbsolutePath() + File.separator + getActivity().getString(R.string.app_name));
+
+        File file = new File(dir, photo.getFilename());
+
+        return file.getAbsolutePath();
+    }
 }
+
+

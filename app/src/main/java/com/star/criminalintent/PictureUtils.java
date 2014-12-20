@@ -23,7 +23,7 @@ public class PictureUtils {
         double srcHeight = options.outHeight;
 
         int inSampleSize = 1;
-        if (srcHeight > destHeight || srcWidth > destWidth) {
+        if ((srcHeight > destHeight) || (srcWidth > destWidth)) {
             if (srcWidth > srcHeight) {
                 inSampleSize = (int) Math.round(srcHeight / destHeight);
             } else {

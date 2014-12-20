@@ -1,24 +1,22 @@
 package com.star.criminalintent;
 
 
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.hardware.Camera;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
@@ -52,53 +50,22 @@ public class CrimeCameraFragment extends Fragment {
 
                     // setCameraDisplayOrientation(getActivity(), 0, mCamera);
 
-                    mCamera.takePicture(new Camera.ShutterCallback() {
-                        @Override
-                        public void onShutter() {
-                            mProgressContainer.setVisibility(View.VISIBLE);
-                        }
-                    }, null, new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            String filename = UUID.randomUUID().toString() + ".jpg";
-
-                            FileOutputStream out = null;
-                            boolean success = true;
-
-                            try {
-                                out = getActivity().openFileOutput(filename, Context.MODE_PRIVATE);
-//                                out = new PrintWriter(file);
-                                out.write(data);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.e(TAG, "Error writing to file " + filename, e);
-                                success = false;
-                            } finally {
-                                try {
-                                    if (out != null) {
-                                        out.close();
-                                    }
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Error closing file " + filename, e);
-                                    success = false;
-                                }
+                    mCamera.takePicture(
+                        new Camera.ShutterCallback() {
+                            @Override
+                            public void onShutter() {
+                                mProgressContainer.setVisibility(View.VISIBLE);
                             }
+                        },
+                        null,
+                        new Camera.PictureCallback() {
+                            @Override
+                            public void onPictureTaken(byte[] data, Camera camera) {
+                                saveJPEGPicture(data, camera);
 
-                            if (success) {
-                                Log.i(TAG, "JPEG saved at " + filename);
-                                Intent i = new Intent();
-                                i.putExtra(EXTRA_PHOTO_FILENAME, filename);
-                                int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
-                                int rotation2 = getActivity().getResources().getConfiguration().orientation;
-                                System.out.println("Rotation: " + rotation + "Rotaion2: " + rotation2);
-                                getActivity().setResult(Activity.RESULT_OK, i);
-                            } else {
-                                getActivity().setResult(Activity.RESULT_CANCELED);
+                                getActivity().finish();
                             }
-
-                            getActivity().finish();
-                        }
-                    });
+                        });
                 }
             }
         });
@@ -198,29 +165,50 @@ public class CrimeCameraFragment extends Fragment {
         return bestSize;
     }
 
-    @TargetApi(Build.VERSION_CODES.GINGERBREAD)
-    private void setCameraDisplayOrientation(Activity activity, int cameraId, Camera camera) {
-        Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(cameraId, info);
-        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-        int rotation2 = getActivity().getResources().getConfiguration().orientation;
-        // System.out.println("Rotation: " + rotation + "Rotaion2: " + rotation2);
-        int degrees = 0;
-        switch (rotation) {
-            case Surface.ROTATION_0: degrees = 0; break;
-            case Surface.ROTATION_90: degrees = 90; break;
-            case Surface.ROTATION_180: degrees = 180; break;
-            case Surface.ROTATION_270: degrees = 270; break;
+    private void saveJPEGPicture(byte[] data, Camera camera) {
+
+        boolean success = true;
+        String filename = UUID.randomUUID().toString() + ".jpg";
+
+        File sdCard = Environment.getExternalStorageDirectory();
+
+        File dir = new File(sdCard.getAbsolutePath() + File.separator + getActivity().getString(R.string.app_name));
+
+        if (!dir.exists()) {
+            dir.mkdirs();
         }
 
-        int result;
-        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            result = (info.orientation + degrees) % 360;
-            result = (360 - result) % 360;  // compensate the mirror
-        } else {  // back-facing
-            result = (info.orientation - degrees + 360) % 360;
+        File file = new File(dir, filename);
+
+        FileOutputStream out = null;
+
+        try {
+//            out = getActivity().openFileOutput(filename, Context.MODE_PRIVATE);
+            out = new FileOutputStream(file);
+            out.write(data);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Error writing to file " + filename, e);
+            success = false;
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error closing file " + filename, e);
+                success = false;
+            }
         }
 
-        camera.setDisplayOrientation(result);
+        if (success) {
+            Log.i(TAG, "JPEG saved at " + filename);
+            Intent i = new Intent();
+            i.putExtra(EXTRA_PHOTO_FILENAME, filename);
+            getActivity().setResult(Activity.RESULT_OK, i);
+        } else {
+            getActivity().setResult(Activity.RESULT_CANCELED);
+        }
     }
+
 }
