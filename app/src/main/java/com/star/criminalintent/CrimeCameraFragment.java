@@ -4,12 +4,14 @@ package com.star.criminalintent;
 import android.app.Activity;
 import android.content.Intent;
 import android.hardware.Camera;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -35,6 +37,14 @@ public class CrimeCameraFragment extends Fragment {
 
     private View mProgressContainer;
 
+    private OrientationEventListener mOrientationEventListener;
+    private Orientation mOrientation;
+
+    public enum Orientation {
+        ORIENTATION_PORTRAIT_NORMAL, ORIENTATION_PORTRAIT_INVERTED,
+        ORIENTATION_LANDSCAPE_NORMAL, ORIENTATION_LANDSCAPE_INVERTED
+    };
+
     @Override
     @SuppressWarnings("deprecation")
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -47,8 +57,6 @@ public class CrimeCameraFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (mCamera != null) {
-
-                    // setCameraDisplayOrientation(getActivity(), 0, mCamera);
 
                     mCamera.takePicture(
                         new Camera.ShutterCallback() {
@@ -126,6 +134,28 @@ public class CrimeCameraFragment extends Fragment {
     public void onResume() {
         super.onResume();
         mCamera = Camera.open();
+
+        if (mOrientationEventListener == null) {
+            mOrientationEventListener = new OrientationEventListener(getActivity(),
+                    SensorManager.SENSOR_DELAY_NORMAL) {
+                @Override
+                public void onOrientationChanged(int orientation) {
+                    if ((orientation >= 315) || (orientation < 45)) {
+                        mOrientation = Orientation.ORIENTATION_PORTRAIT_NORMAL;
+                    } else if ((orientation < 315) && (orientation >= 225)) {
+                        mOrientation = Orientation.ORIENTATION_LANDSCAPE_NORMAL;
+                    } else if ((orientation < 225) && (orientation >= 135)) {
+                        mOrientation = Orientation.ORIENTATION_PORTRAIT_INVERTED;
+                    } else if ((orientation < 135) && (orientation > 45)) {
+                        mOrientation = Orientation.ORIENTATION_LANDSCAPE_INVERTED;
+                    }
+                }
+            };
+        }
+
+        if (mOrientationEventListener.canDetectOrientation()) {
+            mOrientationEventListener.enable();
+        }
     }
 
     @Override
@@ -136,6 +166,10 @@ public class CrimeCameraFragment extends Fragment {
         if (mCamera != null) {
             mCamera.release();
             mCamera = null;
+        }
+
+        if (mOrientationEventListener != null) {
+            mOrientationEventListener.disable();
         }
     }
 
@@ -185,7 +219,7 @@ public class CrimeCameraFragment extends Fragment {
         try {
 //            out = getActivity().openFileOutput(filename, Context.MODE_PRIVATE);
             out = new FileOutputStream(file);
-            out.write(data);
+            out.write(PictureUtils.rotatePicture(data, mOrientation));
         } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, "Error writing to file " + filename, e);

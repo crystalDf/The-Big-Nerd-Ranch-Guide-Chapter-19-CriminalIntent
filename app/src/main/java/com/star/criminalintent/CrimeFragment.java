@@ -17,6 +17,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -171,18 +172,20 @@ public class CrimeFragment extends Fragment {
             public void onClick(View v) {
                 Photo photo = mCrime.getPhoto();
 
-                if (photo == null) {
-                    return;
+                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+
+                if (photo != null) {
+//                    String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
+
+                    String path = getSDPhotoPath(photo.getFilename());;
+
+                    ImageFragment.newInstance(path).show(fragmentManager, DIALOG_IMAGE);
                 }
 
-                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
-//                String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
-
-                String path = getSDPhotoPath();;
-
-                ImageFragment.newInstance(path).show(fragmentManager, DIALOG_IMAGE);
             }
         });
+
+        registerForContextMenu(mPhotoView);
 
         return v;
     }
@@ -205,6 +208,9 @@ public class CrimeFragment extends Fragment {
                 Log.i(TAG, "filename: " + filename);
 
                 Photo photo = new Photo(filename);
+
+                deleteOldPhoto(mCrime);
+
                 mCrime.setPhoto(photo);
 
                 Log.i(TAG, "Crime: " + mCrime.getTitle() + " has a photo");
@@ -217,7 +223,7 @@ public class CrimeFragment extends Fragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.menu_fragment_crime_delete_context, menu);
+        inflater.inflate(R.menu.option_menu_fragment_crime, menu);
     }
 
     @Override
@@ -230,6 +236,7 @@ public class CrimeFragment extends Fragment {
                 }
                 return true;
             case R.id.option_menu_item_delete_crime:
+                deleteOldPhoto(mCrime);
                 CrimeLab.getCrimeLab(getActivity()).deleteCrime(mCrime);
                 if (NavUtils.getParentActivityName(getActivity()) != null) {
                     NavUtils.navigateUpFromSameTask(getActivity());
@@ -241,25 +248,28 @@ public class CrimeFragment extends Fragment {
     }
 
     @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        getActivity().getMenuInflater().inflate(R.menu.context_menu_fragment_crime_item_delete_photo, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.context_menu_item_delete_photo:
+                deleteOldPhoto(mCrime);
+                mCrime.setPhoto(null);
+                mPhotoView.setImageDrawable(null);
+                return true;
+        }
+
+        return super.onContextItemSelected(item);
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
         CrimeLab.getCrimeLab(getActivity()).saveCrimes();
-    }
-
-    private void showPhoto() {
-
-        Photo photo = mCrime.getPhoto();
-        BitmapDrawable bitmapDrawable = null;
-
-        if (photo != null) {
-//            String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
-
-            String path = getSDPhotoPath();
-
-            bitmapDrawable = PictureUtils.getScaledDrawable(getActivity(), path);
-        }
-
-        mPhotoView.setImageDrawable(bitmapDrawable);
     }
 
     @Override
@@ -274,18 +284,45 @@ public class CrimeFragment extends Fragment {
         PictureUtils.cleanImageView(mPhotoView);
     }
 
-    private String getSDPhotoPath() {
+    private void showPhoto() {
 
         Photo photo = mCrime.getPhoto();
+        BitmapDrawable bitmapDrawable = null;
+
+        if (photo != null) {
+//            String path = getActivity().getFileStreamPath(photo.getFilename()).getAbsolutePath();
+
+            String path = getSDPhotoPath(photo.getFilename());
+
+            bitmapDrawable = PictureUtils.getScaledDrawable(getActivity(), path);
+        }
+
+        mPhotoView.setImageDrawable(bitmapDrawable);
+    }
+
+    private String getSDPhotoPath(String filename) {
 
         File sdCard = Environment.getExternalStorageDirectory();
 
         File dir = new File(sdCard.getAbsolutePath() + File.separator + getActivity().getString(R.string.app_name));
 
-        File file = new File(dir, photo.getFilename());
+        File file = new File(dir, filename);
 
         return file.getAbsolutePath();
     }
+
+    private void deleteOldPhoto(Crime crime) {
+
+        Photo photo = crime.getPhoto();
+
+        if (photo != null) {
+            String path = getSDPhotoPath(photo.getFilename());
+
+            File file = new File(path);
+            file.delete();
+        }
+    }
+
 }
 
 

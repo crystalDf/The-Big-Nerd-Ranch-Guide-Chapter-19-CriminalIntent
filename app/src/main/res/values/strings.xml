@@ -26,4 +26,6 @@
 
     <string name="take">Take!</string>
 
+    <string name="delete_photo">Delete Photo</string>
+
 </resources>

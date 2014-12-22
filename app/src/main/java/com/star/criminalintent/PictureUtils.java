@@ -3,9 +3,12 @@ package com.star.criminalintent;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.view.Display;
 import android.widget.ImageView;
+
+import java.io.ByteArrayOutputStream;
 
 public class PictureUtils {
 
@@ -48,5 +51,36 @@ public class PictureUtils {
 
         bitmapDrawable.getBitmap().recycle();
         imageView.setImageDrawable(null);
+    }
+
+    public static byte[] rotatePicture(byte[] data, CrimeCameraFragment.Orientation orientation) {
+        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        Matrix matrix = new Matrix();
+
+        switch (orientation) {
+            case ORIENTATION_PORTRAIT_NORMAL:
+                matrix.postRotate(90);
+                break;
+            case ORIENTATION_PORTRAIT_INVERTED:
+                matrix.postRotate(270);
+                break;
+            case ORIENTATION_LANDSCAPE_NORMAL:
+                matrix.postRotate(0);
+                break;
+            case ORIENTATION_LANDSCAPE_INVERTED:
+                matrix.postRotate(180);
+                break;
+        }
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+
+        return out.toByteArray();
     }
 }
