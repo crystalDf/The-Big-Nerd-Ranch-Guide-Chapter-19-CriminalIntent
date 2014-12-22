@@ -3,6 +3,7 @@ package com.star.criminalintent;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ListFragment;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.view.ActionMode;
@@ -20,6 +21,7 @@ import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class CrimeListFragment extends ListFragment {
@@ -99,7 +101,7 @@ public class CrimeListFragment extends ListFragment {
                     @Override
                     public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
                         MenuInflater inflater = actionMode.getMenuInflater();
-                        inflater.inflate(R.menu.crime_list_item_context, menu);
+                        inflater.inflate(R.menu.context_menu_fragment_crime_list_item_delete_crime, menu);
                         mActionMode = actionMode;
                         return true;
                     }
@@ -112,7 +114,7 @@ public class CrimeListFragment extends ListFragment {
                     @Override
                     public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
                         switch (menuItem.getItemId()) {
-                            case R.id.menu_item_delete_crime:
+                            case R.id.context_menu_item_delete_crime:
                                 CrimeAdapter adapter = (CrimeAdapter) getListAdapter();
                                 CrimeLab crimeLab = CrimeLab.getCrimeLab(getActivity());
                                 for (int i = adapter.getCount() - 1; i >= 0; i--) {
@@ -173,7 +175,7 @@ public class CrimeListFragment extends ListFragment {
 //                @Override
 //                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 //                    MenuInflater inflater = mode.getMenuInflater();
-//                    inflater.inflate(R.menu.crime_list_item_context, menu);
+//                    inflater.inflate(R.menu.context_menu_fragment_crime_list_item_delete_crime, menu);
 //                    return true;
 //                }
 //
@@ -242,9 +244,9 @@ public class CrimeListFragment extends ListFragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.fragment_crime_list, menu);
+        inflater.inflate(R.menu.option_menu_fragment_crime_list, menu);
 
-        MenuItem showSubtitle = menu.findItem(R.id.menu_item_show_subtitle);
+        MenuItem showSubtitle = menu.findItem(R.id.option_menu_item_show_subtitle);
         if (mSubtitleVisible && showSubtitle != null) {
             showSubtitle.setTitle(R.string.hide_subtitle);
         }
@@ -254,14 +256,14 @@ public class CrimeListFragment extends ListFragment {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()) {
-            case R.id.menu_item_new_crime:
+            case R.id.option_menu_item_new_crime:
                 Crime c = new Crime();
                 CrimeLab.getCrimeLab(getActivity()).addCrime(c);
                 Intent i = new Intent(getActivity(), CrimePagerActivity.class);
                 i.putExtra(CrimeFragment.EXTRA_CRIME_ID, c.getId());
                 startActivityForResult(i, 0);
                 return true;
-            case R.id.menu_item_show_subtitle:
+            case R.id.option_menu_item_show_subtitle:
                 if (((ActionBarActivity)getActivity()).getSupportActionBar().getSubtitle() == null) {
                     ((ActionBarActivity)getActivity()).getSupportActionBar().
                             setSubtitle(R.string.subtitle);
@@ -281,7 +283,7 @@ public class CrimeListFragment extends ListFragment {
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        getActivity().getMenuInflater().inflate(R.menu.crime_list_item_context, menu);
+        getActivity().getMenuInflater().inflate(R.menu.context_menu_fragment_crime_list_item_delete_crime, menu);
     }
 
     @Override
@@ -293,7 +295,8 @@ public class CrimeListFragment extends ListFragment {
         Crime crime = adapter.getItem(position);
 
         switch (item.getItemId()) {
-            case R.id.menu_item_delete_crime:
+            case R.id.context_menu_item_delete_crime:
+                deleteOldPhoto(crime);
                 CrimeLab.getCrimeLab(getActivity()).deleteCrime(crime);
                 adapter.notifyDataSetChanged();
                 return true;
@@ -329,6 +332,29 @@ public class CrimeListFragment extends ListFragment {
             solvedCheckBox.setChecked(c.isSolved());
 
             return convertView;
+        }
+    }
+
+    private String getSDPhotoPath(String filename) {
+
+        File sdCard = Environment.getExternalStorageDirectory();
+
+        File dir = new File(sdCard.getAbsolutePath() + File.separator + getActivity().getString(R.string.app_name));
+
+        File file = new File(dir, filename);
+
+        return file.getAbsolutePath();
+    }
+
+    private void deleteOldPhoto(Crime crime) {
+
+        Photo photo = crime.getPhoto();
+
+        if (photo != null) {
+            String path = getSDPhotoPath(photo.getFilename());
+
+            File file = new File(path);
+            file.delete();
         }
     }
 }
