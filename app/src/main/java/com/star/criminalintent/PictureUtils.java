@@ -54,7 +54,11 @@ public class PictureUtils {
     }
 
     public static byte[] rotatePicture(byte[] data, CrimeCameraFragment.Orientation orientation) {
-        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = 5;
+
+        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();

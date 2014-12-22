@@ -119,6 +119,7 @@ public class CrimeListFragment extends ListFragment {
                                 CrimeLab crimeLab = CrimeLab.getCrimeLab(getActivity());
                                 for (int i = adapter.getCount() - 1; i >= 0; i--) {
                                     if (getListView().isItemChecked(i)) {
+                                        deleteOldPhoto(adapter.getItem(i));
                                         crimeLab.deleteCrime(adapter.getItem(i));
                                     }
                                 }
@@ -221,6 +222,12 @@ public class CrimeListFragment extends ListFragment {
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        CrimeLab.getCrimeLab(getActivity()).saveCrimes();
+    }
+
+    @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         if (mActionMode == null) {
             Crime c = (Crime) getListAdapter().getItem(position);
@@ -296,7 +303,6 @@ public class CrimeListFragment extends ListFragment {
 
         switch (item.getItemId()) {
             case R.id.context_menu_item_delete_crime:
-                deleteOldPhoto(crime);
                 CrimeLab.getCrimeLab(getActivity()).deleteCrime(crime);
                 adapter.notifyDataSetChanged();
                 return true;
